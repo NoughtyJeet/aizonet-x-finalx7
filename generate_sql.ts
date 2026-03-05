@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 
 // Define the shape of our BlogPost to match Supabase
 interface Author {
@@ -79,8 +80,9 @@ files.forEach(file => {
         };
 
         sqlStatements += `
-INSERT INTO posts (title, slug, excerpt, content, author, date, "imageUrl", category, tags, "metaTitle", "metaDescription")
+INSERT INTO posts (id, title, slug, excerpt, content, author, date, "imageUrl", category, tags, "metaTitle", "metaDescription")
 VALUES (
+  '${crypto.randomUUID()}',
   '${escapeSql(post.title)}',
   '${escapeSql(post.slug)}',
   '${escapeSql(post.excerpt)}',
