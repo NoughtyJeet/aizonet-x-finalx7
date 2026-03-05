@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { marked } from 'marked';
 
 // Define the shape of our BlogPost to match Supabase
 interface Author {
@@ -50,6 +51,7 @@ files.forEach(file => {
     if (frontmatterMatch) {
         const fm = frontmatterMatch[1];
         let body = frontmatterMatch[2].trim();
+        const htmlBody = marked.parse(body) as string;
 
         const titleMatch = fm.match(/title:\s*"(.*?)"/);
         const descMatch = fm.match(/meta_description:\s*"(.*?)"/);
@@ -69,7 +71,7 @@ files.forEach(file => {
             title,
             slug,
             excerpt,
-            content: body,
+            content: htmlBody,
             author: AUTHOR,
             date,
             imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=800',

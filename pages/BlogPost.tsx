@@ -7,7 +7,6 @@ import AdSlot from '../components/AdSlot';
 import { BlogPost } from '../types';
 import { supabaseService } from '../services/supabaseService';
 import { MOCK_POSTS } from '../constants';
-import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 
 const BlogPostTemplate: React.FC = () => {
