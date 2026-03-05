@@ -14,8 +14,10 @@
     "@google/genai": "^1.40.0",
     "@supabase/supabase-js": "^2.97.0",
     "clsx": "^2.1.1",
+    "dompurify": "^3.3.1",
     "express": "^5.2.1",
     "lucide-react": "^0.575.0",
+    "marked": "^17.0.4",
     "motion": "^12.34.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -24,7 +26,9 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
     "@types/express": "^5.0.6",
+    "@types/marked": "^5.0.2",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
     "tsx": "^4.21.0",
