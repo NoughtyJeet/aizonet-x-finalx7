@@ -26,6 +26,7 @@ import AdminProgrammaticSEO from './pages/admin/ProgrammaticSEO';
 import ComparisonDetail from './pages/ComparisonDetail';
 import AdSlot from './components/AdSlot';
 import Chatbot from './components/Chatbot';
+import StockTicker from './components/StockTicker';
 import Login from './pages/auth/Login';
 import SignUp from './pages/auth/SignUp';
 import { Theme, SiteSettings, AITool, Category } from './types';
@@ -56,7 +57,7 @@ const ProtectedRoute = ({ children, requiredRole }: { children?: React.ReactNode
   }, []);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">Loading...</div>;
-  
+
   if (!authenticated) {
     return <Navigate to={requiredRole === 'Admin' ? "/admin/login" : "/login"} />;
   }
@@ -102,8 +103,8 @@ const CategoriesPage = () => {
       </div>
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6 px-4">
         {cats.map(cat => (
-          <Link 
-            key={cat.id} 
+          <Link
+            key={cat.id}
             to={`/tools?category=${encodeURIComponent(cat.name)}`}
             className="group relative p-8 bg-white dark:bg-slate-900 border dark:border-slate-800 rounded-[2.5rem] text-center hover:border-indigo-600 dark:hover:border-indigo-400 transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-600/10 hover:-translate-y-2"
           >
@@ -163,63 +164,63 @@ const App: React.FC = () => {
       const settings = await supabaseService.getSettings() || INITIAL_SITE_SETTINGS;
       const seo = settings.seo;
 
-    // Dynamic Link Tag for Canonical (Crucial for avoiding property mismatch)
-    const upsertLink = (rel: string, href: string) => {
-      if (!href) return;
-      let el = document.querySelector(`link[rel="${rel}"]`);
-      if (!el) {
-        el = document.createElement('link');
-        el.setAttribute('rel', rel);
-        document.head.appendChild(el);
+      // Dynamic Link Tag for Canonical (Crucial for avoiding property mismatch)
+      const upsertLink = (rel: string, href: string) => {
+        if (!href) return;
+        let el = document.querySelector(`link[rel="${rel}"]`);
+        if (!el) {
+          el = document.createElement('link');
+          el.setAttribute('rel', rel);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('href', href);
+      };
+
+      const upsertMeta = (name: string, content: string, attr: 'name' | 'property' = 'name') => {
+        if (!content) return;
+        let el = document.querySelector(`meta[${attr}="${name}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute(attr, name);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+
+      // Canonical Tag Injection (Fixes GSC property issues)
+      if (seo.siteUrl) {
+        upsertLink('canonical', seo.siteUrl);
       }
-      el.setAttribute('href', href);
-    };
 
-    const upsertMeta = (name: string, content: string, attr: 'name' | 'property' = 'name') => {
-      if (!content) return;
-      let el = document.querySelector(`meta[${attr}="${name}"]`);
-      if (!el) {
-        el = document.createElement('meta');
-        el.setAttribute(attr, name);
-        document.head.appendChild(el);
-      }
-      el.setAttribute('content', content);
-    };
+      // Dynamic Verification Tags
+      upsertMeta('google-site-verification', seo.googleSearchConsoleId);
+      upsertMeta('msvalidate.01', seo.bingVerification);
+      upsertMeta('yandex-verification', seo.yandexVerification);
+      upsertMeta('baidu-site-verification', seo.baiduVerification);
+      upsertMeta('p:domain_verify', seo.pinterestVerification);
+      upsertMeta('facebook-domain-verification', seo.facebookDomainVerification);
 
-    // Canonical Tag Injection (Fixes GSC property issues)
-    if (seo.siteUrl) {
-      upsertLink('canonical', seo.siteUrl);
-    }
+      // Google Analytics Integration
+      if (seo.googleAnalyticsId && !(window as any).gtag) {
+        const script = document.createElement('script');
+        script.async = true;
+        script.src = `https://www.googletagmanager.com/gtag/js?id=${seo.googleAnalyticsId}`;
+        document.head.appendChild(script);
 
-    // Dynamic Verification Tags
-    upsertMeta('google-site-verification', seo.googleSearchConsoleId);
-    upsertMeta('msvalidate.01', seo.bingVerification);
-    upsertMeta('yandex-verification', seo.yandexVerification);
-    upsertMeta('baidu-site-verification', seo.baiduVerification);
-    upsertMeta('p:domain_verify', seo.pinterestVerification);
-    upsertMeta('facebook-domain-verification', seo.facebookDomainVerification);
-
-    // Google Analytics Integration
-    if (seo.googleAnalyticsId && !(window as any).gtag) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = `https://www.googletagmanager.com/gtag/js?id=${seo.googleAnalyticsId}`;
-      document.head.appendChild(script);
-
-      const inlineScript = document.createElement('script');
-      inlineScript.innerHTML = `
+        const inlineScript = document.createElement('script');
+        inlineScript.innerHTML = `
         window.dataLayer = window.dataLayer || [];
         function gtag(){dataLayer.push(arguments);}
         gtag('js', new Date());
         gtag('config', '${seo.googleAnalyticsId}');
       `;
-      document.head.appendChild(inlineScript);
-    }
+        document.head.appendChild(inlineScript);
+      }
 
-    // Google AdSense Identification
-    if (settings.ads.adSenseClientId) {
-      upsertMeta('google-adsense-account', settings.ads.adSenseClientId);
-    }
+      // Google AdSense Identification
+      if (settings.ads.adSenseClientId) {
+        upsertMeta('google-adsense-account', settings.ads.adSenseClientId);
+      }
     } catch (err) {
       console.error('Failed to inject SEO tags:', err);
     }
@@ -238,11 +239,11 @@ const App: React.FC = () => {
       } catch (e) {
         console.error('❌ Connectivity check failed:', e);
       }
-      
+
       await supabaseService.seedInitialData();
       injectSEOTags();
     };
-    
+
     init();
 
     window.addEventListener('settingsUpdated', injectSEOTags);
@@ -277,7 +278,7 @@ const App: React.FC = () => {
     loadTools();
   }, []);
 
-  const searchResults = searchQuery.length > 1 
+  const searchResults = searchQuery.length > 1
     ? currentTools.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 5)
     : [];
 
@@ -298,12 +299,13 @@ const App: React.FC = () => {
             <Route path="/admin/seo" element={<ProtectedRoute requiredRole="Admin"><AdminProgrammaticSEO /></ProtectedRoute>} />
             <Route path="/admin/settings" element={<ProtectedRoute requiredRole="Admin"><AdminSettings /></ProtectedRoute>} />
             <Route path="/admin/categories" element={<ProtectedRoute requiredRole="Admin"><AdminCategories /></ProtectedRoute>} />
-            
+
             <Route path="*" element={
               <>
                 <div className="sticky top-0 z-50">
-                   <AdSlot placement="header" className="bg-white dark:bg-slate-900 border-b dark:border-slate-800" />
-                   <Header theme={theme} toggleTheme={toggleTheme} openSearch={() => setIsSearchOpen(true)} />
+                  <AdSlot placement="header" className="bg-white dark:bg-slate-900 border-b dark:border-slate-800" />
+                  <Header theme={theme} toggleTheme={toggleTheme} openSearch={() => setIsSearchOpen(true)} />
+                  <StockTicker />
                 </div>
                 <main className="flex-grow dark:bg-slate-950 bg-white">
                   <Routes>
@@ -327,23 +329,23 @@ const App: React.FC = () => {
               </>
             } />
           </Routes>
-  
+
           <CookieConsent />
-  
+
           {isSearchOpen && (
-            <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 bg-slate-900/40 backdrop-blur-md px-4" onClick={() => {setIsSearchOpen(false); setSearchQuery('');}}>
+            <div className="fixed inset-0 z-[100] flex items-start justify-center pt-20 bg-slate-900/40 backdrop-blur-md px-4" onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }}>
               <div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center border-b-2 dark:border-slate-700 p-6">
                   <svg className="w-6 h-6 text-slate-400 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                  <input 
+                  <input
                     autoFocus
-                    type="text" 
+                    type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search 5,000+ AI tools..." 
+                    placeholder="Search 5,000+ AI tools..."
                     className="flex-1 bg-transparent border-none focus:ring-0 text-xl font-medium dark:text-white placeholder-slate-400"
                   />
-                  <button onClick={() => {setIsSearchOpen(false); setSearchQuery('');}} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                  <button onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
                   </button>
                 </div>
@@ -353,11 +355,11 @@ const App: React.FC = () => {
                       <h5 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 px-4">Top Suggestions</h5>
                       <div className="space-y-1">
                         {searchResults.map(tool => (
-                          <Link key={tool.id} to={`/tools/${tool.slug}`} onClick={() => {setIsSearchOpen(false); setSearchQuery('');}} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
+                          <Link key={tool.id} to={`/tools/${tool.slug}`} onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }} className="flex items-center gap-4 p-4 rounded-2xl hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors group">
                             <img src={tool.logoUrl} className="h-10 w-10 rounded-lg object-cover" alt={tool.name} />
                             <div className="flex-1">
-                               <div className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">{tool.name}</div>
-                               <div className="text-xs text-slate-500 dark:text-slate-400">{tool.category}</div>
+                              <div className="font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 transition-colors">{tool.name}</div>
+                              <div className="text-xs text-slate-500 dark:text-slate-400">{tool.category}</div>
                             </div>
                           </Link>
                         ))}
